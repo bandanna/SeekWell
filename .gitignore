@@ -1,1 +1,6 @@
 *.xml
+target/streams/*
+project/target/streams/*
+.idea/*
+*.class
+project/target/config-classes/*
