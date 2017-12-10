@@ -4,6 +4,10 @@ import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix, 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.Row
+import org.apache.spark.ml.feature.HashingTF
+import org.apache.spark.ml.feature.{MinHashLSH, MinHashLSHModel}
+import org.apache.spark.ml.Pipeline
+
 
 
 
@@ -46,12 +50,27 @@ object Seeker extends Indexer{
 
     //str.replace("[","").replace("]","").replace("(","").dropRight(1).split(",").map(_.toString.toDouble)
 
-    val stripString = udf{ str:String => str.replace("[","").replace("]","").replace("(","").dropRight(1).split(",").map(_.toString.toDouble)}
+//    val stripString = udf{ str:String => str.replace("[","").replace("]","").replace("(","").dropRight(1).split(",").map(_.toString.toDouble)}
+//
+//    rescaledData.withColumn("fet",stripString($"features")).show()
 
-    rescaledData.withColumn("fet",stripString($"features")).show()
+
+    val vectorizer = new HashingTF().setInputCol("tokens").setOutputCol("vectors")
+    val lsh = new MinHashLSH().setInputCol("vectors").setOutputCol("lsh")
 
 
+    val pipeline = new Pipeline().setStages(Array(tokenizer, vectorizer, lsh))
 
+    var db = tokenizedDf.select("content")
+
+    val query = Seq("chiang mai in thailand").toDF("content")
+    val model = pipeline.fit(db)
+
+    val dbHashed = model.transform(db)
+    val queryHashed = model.transform(query)
+
+    model.stages.last.asInstanceOf[MinHashLSHModel].
+      approxSimilarityJoin(dbHashed, queryHashed, 100).show
 
 
 
@@ -62,17 +81,7 @@ object Seeker extends Indexer{
 
   }
 
-//  tokenized_df.show(false)
 
-/* // THIS WOULD KEEP MANY SINGLE LETTERS, overall regular tokenizer is better for the test dataset
-  val regexTokenizer = new RegexTokenizer()
-    .setInputCol("content")
-    .setOutputCol("tokens")
-    .setPattern("\\W")
-  val regTokenized=regexTokenizer.transform(df)
-
-  regTokenized.show(false)
-*/
 
 
 /*
