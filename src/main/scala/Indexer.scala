@@ -3,9 +3,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import scala.io.Source
 import scala.collection.mutable.Map
 
-
 trait Indexer{
-
 
   val spark = SparkSession.
     builder().
@@ -14,7 +12,6 @@ trait Indexer{
     getOrCreate()
 
   import spark.implicits._
-
 
   /**
     * Get List of all files
@@ -57,8 +54,7 @@ trait Indexer{
   def convertFilesToDataframe(files : List[File]) : DataFrame = {
 
     var tmp = Map[String, String]()
-
-    files.foreach(f => print(readFileContent(f)))
+//    files.foreach(f => print(readFileContent(f)))
     files.foreach(f => tmp+=(f.getName -> readFileContent(f)))
 
     return tmp.toSeq.toDF("name","content").orderBy("name")
